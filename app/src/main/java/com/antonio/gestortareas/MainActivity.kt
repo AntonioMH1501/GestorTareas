@@ -6,9 +6,11 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -97,70 +99,79 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
-                    when (pantalla) {
-                        Pantalla.LISTA -> ListaTareasScreen(
-                            tareas = tareasVisibles,
-                            soloPendientes = soloPendientes,
-                            onSoloPendientesChange = { nuevoValor ->
-                                scope.launch { preferencias.guardarSoloPendientes(nuevoValor) }
-                            },
-                            onCompletadaChange = { tarea, completada ->
-                                scope.launch {
-                                    repositorio.actualizar(tarea.copy(completada = completada))
-                                }
-                            },
-                            onEditar = { tarea ->
-                                idEnEdicion = tarea.id
-                                pantalla = Pantalla.FORMULARIO
-                            },
-                            onCompartir = { tarea -> compartirTarea(context, tarea) },
-                            onEliminar = { tarea ->
-                                scope.launch { repositorio.eliminar(tarea) }
-                            },
-                            modifier = Modifier.padding(innerPadding)
-                        )
+                    val modifierPantalla = Modifier
+                        .padding(innerPadding)
+                        .widthIn(max = 640.dp)
 
-                        Pantalla.FORMULARIO -> FormularioTareaScreen(
-                            tareaInicial = tareaEnEdicion,
-                            onGuardar = { titulo, descripcion, prioridad ->
-                                scope.launch {
-                                    if (tareaEnEdicion != null) {
-                                        repositorio.actualizar(
-                                            tareaEnEdicion.copy(
-                                                titulo = titulo,
-                                                descripcion = descripcion,
-                                                prioridad = prioridad
-                                            )
-                                        )
-                                    } else {
-                                        repositorio.insertar(
-                                            Tarea(0, titulo, descripcion, prioridad, false)
-                                        )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        when (pantalla) {
+                            Pantalla.LISTA -> ListaTareasScreen(
+                                tareas = tareasVisibles,
+                                soloPendientes = soloPendientes,
+                                onSoloPendientesChange = { nuevoValor ->
+                                    scope.launch { preferencias.guardarSoloPendientes(nuevoValor) }
+                                },
+                                onCompletadaChange = { tarea, completada ->
+                                    scope.launch {
+                                        repositorio.actualizar(tarea.copy(completada = completada))
                                     }
+                                },
+                                onEditar = { tarea ->
+                                    idEnEdicion = tarea.id
+                                    pantalla = Pantalla.FORMULARIO
+                                },
+                                onCompartir = { tarea -> compartirTarea(context, tarea) },
+                                onEliminar = { tarea ->
+                                    scope.launch { repositorio.eliminar(tarea) }
+                                },
+                                modifier = modifierPantalla
+                            )
+
+                            Pantalla.FORMULARIO -> FormularioTareaScreen(
+                                tareaInicial = tareaEnEdicion,
+                                onGuardar = { titulo, descripcion, prioridad ->
+                                    scope.launch {
+                                        if (tareaEnEdicion != null) {
+                                            repositorio.actualizar(
+                                                tareaEnEdicion.copy(
+                                                    titulo = titulo,
+                                                    descripcion = descripcion,
+                                                    prioridad = prioridad
+                                                )
+                                            )
+                                        } else {
+                                            repositorio.insertar(
+                                                Tarea(0, titulo, descripcion, prioridad, false)
+                                            )
+                                        }
+                                        idEnEdicion = null
+                                        pantalla = Pantalla.LISTA
+                                    }
+                                },
+                                onCancelar = {
                                     idEnEdicion = null
                                     pantalla = Pantalla.LISTA
-                                }
-                            },
-                            onCancelar = {
-                                idEnEdicion = null
-                                pantalla = Pantalla.LISTA
-                            },
-                            modifier = Modifier.padding(innerPadding)
-                        )
+                                },
+                                modifier = modifierPantalla
+                            )
 
-                        Pantalla.EJEMPLO -> TareasEjemploScreen(
-                            estado = estadoApi,
-                            onCargar = {
-                                if (estadoApi !is EstadoTareasRemotas.Cargando) {
-                                    estadoApi = EstadoTareasRemotas.Cargando
-                                    scope.launch {
-                                        estadoApi = repositorioRemoto.obtenerTareasDeEjemplo()
+                            Pantalla.EJEMPLO -> TareasEjemploScreen(
+                                estado = estadoApi,
+                                onCargar = {
+                                    if (estadoApi !is EstadoTareasRemotas.Cargando) {
+                                        estadoApi = EstadoTareasRemotas.Cargando
+                                        scope.launch {
+                                            estadoApi = repositorioRemoto.obtenerTareasDeEjemplo()
+                                        }
                                     }
-                                }
-                            },
-                            onVolver = { pantalla = Pantalla.LISTA },
-                            modifier = Modifier.padding(innerPadding)
-                        )
+                                },
+                                onVolver = { pantalla = Pantalla.LISTA },
+                                modifier = modifierPantalla
+                            )
+                        }
                     }
                 }
             }
